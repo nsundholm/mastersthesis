@@ -5,7 +5,7 @@ clearvars;
 % Simulation settings
 % ********************
 
-start_from_simulink = 1;
+run_from_script = 1;
 start_time = '0';
 end_time = '800';
 solver_type = 'Fixed-step';
@@ -33,8 +33,8 @@ run('hev_drivecycle');
 run('hev_models');
 
 % Run simulation
-if start_from_simulink ~= 1
-    sim(hevmodel)
+if run_from_script == 1
+    tic;sim(hevmodel);toc;
 end
 
 %% Plot simulated data

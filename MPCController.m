@@ -1,4 +1,4 @@
-function uout = MPCController(currentr,currentx,oldPe,t)
+function uout = MPCController(currentr,currentx,oldPe,s,t)
 %#ok<*AGROW>
 %#ok<*REPMAT>
 
@@ -17,13 +17,13 @@ if t == 0
     C = [1 0];
     
     % Define MPC controller data
-    Qv = 1000;
-    Qq = 100;
-    Qoff = 200;
+    Qv = 400;
+    Qq = 100000;
+    Qoff = 3000;
     Qmin = 220;
     Qopt = 201;
     Qmax = 216;
-    N = 10;
+    N = 20;
     
     % Avoid explosion of internally defined variables in YALMIP
     yalmip('clear')
@@ -36,6 +36,7 @@ if t == 0
     a = binvar(repmat(4,1,N),repmat(1,1,N)); % Decide Pe
     d = binvar(repmat(5,1,N),repmat(1,1,N)); % Decide M
     pastPe = binvar(1);
+    stot = sdpvar(1);
     
     constraints = [];
     objective = 0;
@@ -46,7 +47,7 @@ if t == 0
                                     sum(a{k}) == 1];
                                                                         
         % Pe constraint
-        u{k}(2) = a{k}(1)*Pe_off + a{k}(2)*Pe_low+a{k}(3)*Pe_opt + a{k}(4)*Pe_max;
+        u{k}(2) = a{k}(2)*Pe_low + a{k}(3)*Pe_opt + a{k}(4)*Pe_max;
         
         % System Dynamics depending on where in ss
         M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vb(1) <= x{k}(1) <= vb(2), Ftb_min(1) + Ftk_min(1)*(x{k}(1) - vb(1)) <= u{k}(1) <= Ftb_max(1) + Ftk_max(1)*(x{k}(1) - vb(1)), Pb_min <= eta_Pout*(10/3.6)*u{k}(1) - eta_Pe*u{k}(2) <= Pb_max];
@@ -63,7 +64,7 @@ if t == 0
                                     sum(d{k}) == 1];
                                 
         % Objective function                       
-        objective = objective + (C*x{k} - r{k})'*Qv*(C*x{k} - r{k}) +  Qoff*abs(a{k}(1) - pastPe) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
+        objective = objective + (C*x{k} - r{k})'*Qv*(C*x{k} - r{k}) + (x{k}(2) - 0.5)'*Qq*stot*(x{k}(2) -0.5) + Qoff*abs(a{k}(1) - pastPe) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
         pastPe = a{k}(1);
     end
     
@@ -72,17 +73,18 @@ if t == 0
     % Define an optimizer that solves the problem for a particular initial
     % state and reference.
     ops = sdpsettings('verbose',1,'solver','cplex');
-    parameters_in = {x{1},[r{:}],pastPe};
+    parameters_in = {x{1},[r{:}],pastPe,stot};
     solutions_out = {u{1},a{1}(1)};
     Controller = optimizer(constraints, objective, ops, parameters_in, solutions_out)
     
-    [solutions,diagnostics] = Controller(currentx,currentr,oldPe);
+    [solutions,diagnostics] = Controller(currentx,currentr,oldPe,s);
     if diagnostics == 1
         error('The problem is infeasible');
     end
     uout = [solutions{1}; solutions{2}];
 else
-    [solutions,diagnostics] = Controller(currentx,currentr,oldPe);
+    s = (s/14850)^2;
+    [solutions,diagnostics] = Controller(currentx,currentr,oldPe,s);
     if diagnostics == 1
         error('The problem is infeasible');
     end
