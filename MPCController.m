@@ -72,7 +72,7 @@ if t == 0
     
     % Define an optimizer that solves the problem for a particular initial
     % state and reference.
-    ops = sdpsettings('verbose',1,'solver','cplex');
+    ops = sdpsettings('verbose',0,'solver','cplex');
     parameters_in = {x{1},[r{:}],pastPe,stot};
     solutions_out = {u{1},a{1}(1)};
     Controller = optimizer(constraints, objective, ops, parameters_in, solutions_out)
