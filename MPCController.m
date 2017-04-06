@@ -18,7 +18,7 @@ if t == 0
     
     % Define MPC controller data
     Qv = 400;
-    Qq = 100000;
+    Qq = 10000;
     Qoff = 3000;
     Qmin = 220;
     Qopt = 201;
@@ -83,7 +83,7 @@ if t == 0
     end
     uout = [solutions{1}; solutions{2}];
 else
-    s = (s/14850)^2;
+    s = (s/14850)^4;
     [solutions,diagnostics] = Controller(currentx,currentr,oldPe,s);
     if diagnostics == 1
         error('The problem is infeasible');
