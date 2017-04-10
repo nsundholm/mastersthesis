@@ -31,19 +31,23 @@ f_u = subs(f_u);
 
 % Define PWA models
 Ts = 1;
-C = [1 0];
+C = [0 1 0];
+s0 = 0;
 v0 = [10 30 50 70 90]/3.6;
+q0 = 0;
+As = [0 1 0; 0 0 0; 0 0 0];
+Bs = [0 0; 0 0; 0 0];
 
 for i = 1:5
-    M(i).v0 = v0(i);
-    M(i).q0 = 0.5;
-    M(i).x0 = [M(i).v0; M(i).q0];
-    M(i).u0 = solve(subs(xdot,[v q],M(i).x0'));
+    M(i).x0 = [s0; v0(i); q0];
+    M(i).u0 = solve(subs(xdot,[v q],M(i).x0(2:3)'));
     M(i).Ft0 = double(M(i).u0.Ft);
     M(i).Pe0 = double(M(i).u0.Pe);
     M(i).u0 = [M(i).Ft0; M(i).Pe0];
-    M(i).A = double(subs(f_x,[v q Ft Pe],[M(i).v0 M(i).q0 M(i).Ft0 M(i).Pe0]));
-    M(i).B = double(subs(f_u,[v q Ft Pe],[M(i).v0 M(i).q0 M(i).Ft0 M(i).Pe0]));
+    As(2:3,2:3) = double(subs(f_x,[v q Ft Pe],[M(i).x0(2:3)' M(i).Ft0 M(i).Pe0]));
+    M(i).A = As;
+    Bs(2:3,1:2) = double(subs(f_u,[v q Ft Pe],[M(i).x0(2:3)' M(i).Ft0 M(i).Pe0]));
+    M(i).B = Bs;
     M(i).Gsys = ss(M(i).A,M(i).B,C,0);
     M(i).Gd = c2d(M(i).Gsys,Ts);
     M(i).Ad = M(i).Gd.A;

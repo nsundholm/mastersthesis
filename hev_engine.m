@@ -13,7 +13,7 @@ ysol(t) = dsolve(eqn,cond);
 
 fplot(ysol/1000,[0 10])
 xlabel('Time [s]');
-ylabel('P_{eng}^* [kW]'])
+ylabel('P_{eng}^* [kW]')
 grid on;
 
 %% Engine Power vs Engine RPM, Engine Fuel vs Engine RPM
@@ -83,7 +83,7 @@ legend('P_{out,max}','P_{out,min}');
 xlabel('v [m/s]');
 ylabel('P_{out} [kW]');
 
-
+%%
 x1 = 0:5:100;
 x2 = -28:2:32;
 [xx,yy] = meshgrid(x1,x2);
@@ -95,9 +95,9 @@ colormap hsv
 colorbar
 hold on;
 zheight = max(z(:)); %finds the highest point in the surface plot
-plot3(v,Ftv_max,zheight*ones(1,length(v)),'LineWidth',2,'Color','red');
-hold on;
-plot3(v,Ftv_min,zheight*ones(1,length(v)),'Linewidth',2);
+%plot3(v,Ftv_max,zheight*ones(1,length(v)),'LineWidth',2,'Color','red');
+%hold on;
+%plot3(v,Ftv_min,zheight*ones(1,length(v)),'Linewidth',2);
 title('Engine output power');
 xlabel('v [km/h]');
 ylabel('F_t [kN]');

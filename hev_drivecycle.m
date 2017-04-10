@@ -11,6 +11,8 @@ ts = timeseries(v_ref,t_ref);
 tsr = resample(ts,0:1:837);
 t_ref = tsr.time;
 v_ref = tsr.data/3.6;
+t_ref = [t_ref' t_ref(end):t_ref(end)+29];
+v_ref = [v_ref' zeros(1,30)];
 plot(t_ref,v_ref*3.6);
 xlabel('Time [s]');
 ylabel('v_{ref} [km/h]');

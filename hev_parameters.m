@@ -18,6 +18,10 @@ r0 = 554.9;
 r1 = 20.3;
 r2 = 3.56;
 
+% Distance bounds (should be -inf, inf)
+s_max = 100000;
+s_min = -s_max;
+
 %  Speed bounds
 vb = (0:20:100)/3.6;
 dv = 20/3.6;
@@ -53,7 +57,7 @@ Pb_max = 300000;
 Pb_min = -300000;
 
 % State and input upper and lower bounds
-lb_state = [vb(1); q_min];
-ub_state = [vb(6); q_max];
+lb_state = [s_min; vb(1); q_min];
+ub_state = [s_max; vb(6); q_max];
 lb_input = [Ftb_min(1); Pe_off];
 ub_input = [Ftb_max(1); Pe_max];
