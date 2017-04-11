@@ -6,13 +6,29 @@
 
 %% Running data
 t_ref = xlsread('rundata.xlsx',1,'B:B');
+s_ref = xlsread('rundata.xlsx',1,'G:G');
 v_ref = xlsread('rundata.xlsx',1,'H:H');
-ts = timeseries(v_ref,t_ref);
-tsr = resample(ts,0:1:837);
-t_ref = tsr.time;
-v_ref = tsr.data/3.6;
-t_ref = [t_ref' t_ref(end):t_ref(end)+29];
-v_ref = [v_ref' zeros(1,30)];
-plot(t_ref,v_ref*3.6);
-xlabel('Time [s]');
-ylabel('v_{ref} [km/h]');
+
+tmin = floor(min(t_ref));
+tmax = floor(max(t_ref));
+
+% srefts = timeseries(s_ref,t_ref);
+% srefts = resample(srefts,tmin:tmax);
+% t_ref = srefts.time;
+% s_ref = srefts.data*1000;
+% t_ref = [t_ref' (t_ref(end)+1):t_ref(end)+100];
+% s_ref = [s_ref' repmat(s_ref(end),1,100)];
+% smax = max(s_ref);
+% plot(t_ref,s_ref);
+% xlabel('Time [s]');
+% ylabel('s_{ref} [m]');
+
+vrefts = timeseries(v_ref,t_ref);
+vrefts = resample(vrefts,tmin:tmax);
+t_ref = vrefts.time;
+v_ref = vrefts.data/3.6;
+t_ref = [t_ref' (t_ref(end)+1):t_ref(end)+100];
+v_ref = [v_ref' repmat(v_ref(end),1,100)];
+% plot(t_ref,v_ref*3.6);
+% xlabel('Time [s]');
+% ylabel('v_{ref} [km/h]');

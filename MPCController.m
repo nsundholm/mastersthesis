@@ -10,20 +10,26 @@ if t == 0
     % Load HEV parameters
     run('hev_parameters.m')
     
+    N = 20;
+    Mb = 10;
+    mb = ones(1,N);
+    for i=1:length(mb)
+        if (mod(i-1,Mb) == 0)
+            mb(1,i) = 0;
+        end
+    end
+    
     % Define model data
     nx = 3; % number of states
     nu = 2; % number of inputs
     ny = 1; % number of outputs
-    C = [0 1 0];
     
     % Define MPC controller data
     Qv = 400;
-    Qq = 3000;
     Qoff = 10000;
     Qmin = 220;
     Qopt = 201;
     Qmax = 216;
-    N = 20;
     
     % Avoid explosion of internally defined variables in YALMIP
     yalmip('clear')
@@ -44,16 +50,21 @@ if t == 0
         constraints = [constraints, lb_state <= x{k} <= ub_state,...
                                     lb_input <= u{k} <= ub_input,...
                                     sum(a{k}) == 1];
+                                
+        % Move-blocking
+        if mb(k) == 1
+            constraints = [constraints, a{k} == a{k-1}];
+        end
                                                                         
         % Pe constraint
-        u{k}(2) = a{k}(2)*Pe_low + a{k}(3)*Pe_opt + a{k}(4)*Pe_max;
+        u{k}(2) = a{k}(2)*Pe_low + a{k}(3)*Pe_opt + a{k}(4)*Pe_max; 
         
         % System Dynamics depending on where in ss
-        M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vb(1) <= x{k}(2) <= vb(2), Ftb_min(1) + Ftk_min(1)*(x{k}(2) - vb(1)) <= u{k}(1) <= Ftb_max(1) + Ftk_max(1)*(x{k}(2) - vb(1)), Pb_min <= eta_Pout*(10/3.6)*u{k}(1) - eta_Pe*u{k}(2) <= Pb_max];
-        M2 = [x{k+1} == M(2).x0 + M(2).Ad*(x{k} - M(2).x0) + M(2).Bd*(u{k} - M(2).u0), vb(2) <= x{k}(2) <= vb(3), Ftb_min(2) + Ftk_min(2)*(x{k}(2) - vb(2)) <= u{k}(1) <= Ftb_max(2) + Ftk_max(2)*(x{k}(2) - vb(2)), Pb_min <= eta_Pout*(30/3.6)*u{k}(1) - eta_Pe*u{k}(2) <= Pb_max];
-        M3 = [x{k+1} == M(3).x0 + M(3).Ad*(x{k} - M(3).x0) + M(3).Bd*(u{k} - M(3).u0), vb(3) <= x{k}(2) <= vb(4), Ftb_min(3) + Ftk_min(3)*(x{k}(2) - vb(3)) <= u{k}(1) <= Ftb_max(3) + Ftk_max(3)*(x{k}(2) - vb(3)), Pb_min <= eta_Pout*(50/3.6)*u{k}(1) - eta_Pe*u{k}(2) <= Pb_max];
-        M4 = [x{k+1} == M(4).x0 + M(4).Ad*(x{k} - M(4).x0) + M(4).Bd*(u{k} - M(4).u0), vb(4) <= x{k}(2) <= vb(5), Ftb_min(4) + Ftk_min(4)*(x{k}(2) - vb(4)) <= u{k}(1) <= Ftb_max(4) + Ftk_max(4)*(x{k}(2) - vb(4)), Pb_min <= eta_Pout*(70/3.6)*u{k}(1) - eta_Pe*u{k}(2) <= Pb_max];
-        M5 = [x{k+1} == M(5).x0 + M(5).Ad*(x{k} - M(5).x0) + M(5).Bd*(u{k} - M(5).u0), vb(5) <= x{k}(2) <= vb(6), Ftb_min(5) + Ftk_min(5)*(x{k}(2) - vb(5)) <= u{k}(1) <= Ftb_max(5) + Ftk_max(5)*(x{k}(2) - vb(5)), Pb_min <= eta_Pout*(90/3.6)*u{k}(1) - eta_Pe*u{k}(2) <= Pb_max];
+        M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vb(1) <= x{k}(2) <= vb(2), Ftb_min(1) + Ftk_min(1)*(x{k}(2) - vb(1)) <= u{k}(1) <= Ftb_max(1) + Ftk_max(1)*(x{k}(2) - vb(1)), Pb_min <= eta_Pout*vb(2)*u{k}(1) - eta_Pe*u{k}(2)];
+        M2 = [x{k+1} == M(2).x0 + M(2).Ad*(x{k} - M(2).x0) + M(2).Bd*(u{k} - M(2).u0), vb(2) <= x{k}(2) <= vb(3), Ftb_min(2) + Ftk_min(2)*(x{k}(2) - vb(2)) <= u{k}(1) <= Ftb_max(2) + Ftk_max(2)*(x{k}(2) - vb(2)), Pb_min <= eta_Pout*vb(3)*u{k}(1) - eta_Pe*u{k}(2)];
+        M3 = [x{k+1} == M(3).x0 + M(3).Ad*(x{k} - M(3).x0) + M(3).Bd*(u{k} - M(3).u0), vb(3) <= x{k}(2) <= vb(4), Ftb_min(3) + Ftk_min(3)*(x{k}(2) - vb(3)) <= u{k}(1) <= Ftb_max(3) + Ftk_max(3)*(x{k}(2) - vb(3)), Pb_min <= eta_Pout*vb(4)*u{k}(1) - eta_Pe*u{k}(2)];
+        M4 = [x{k+1} == M(4).x0 + M(4).Ad*(x{k} - M(4).x0) + M(4).Bd*(u{k} - M(4).u0), vb(4) <= x{k}(2) <= vb(5), Ftb_min(4) + Ftk_min(4)*(x{k}(2) - vb(4)) <= u{k}(1) <= Ftb_max(4) + Ftk_max(4)*(x{k}(2) - vb(4)), Pb_min <= eta_Pout*vb(5)*u{k}(1) - eta_Pe*u{k}(2)];
+        M5 = [x{k+1} == M(5).x0 + M(5).Ad*(x{k} - M(5).x0) + M(5).Bd*(u{k} - M(5).u0), vb(5) <= x{k}(2) <= vb(6), Ftb_min(5) + Ftk_min(5)*(x{k}(2) - vb(5)) <= u{k}(1) <= Ftb_max(5) + Ftk_max(5)*(x{k}(2) - vb(5)), Pb_min <= eta_Pout*vb(6)*u{k}(1) - eta_Pe*u{k}(2)];
         
         constraints = [constraints, implies(d{k}(1), M1),...
                                     implies(d{k}(2), M2),...
@@ -63,7 +74,7 @@ if t == 0
                                     sum(d{k}) == 1];
                                 
         % Objective function                       
-        objective = objective + (C*x{k} - r{k})'*Qv*(C*x{k} - r{k}) + Qoff*abs(a{k}(1) - pastPe) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
+        objective = objective + (x{k}(2)-r{k})'*Qv*(x{k}(2)-r{k}) + Qoff*abs(a{k}(1)-pastPe) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
         pastPe = a{k}(1);
     end
     

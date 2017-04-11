@@ -7,16 +7,13 @@ clearvars;
 
 run_from_script = 0;
 start_time = '0';
-end_time = '840';
+end_time = '200';
 solver_type = 'Fixed-step';
 Ts = 1;
 plotting = 1;
 saveplotting = 0;
 
 % ********************
-
-
-
 
 % Simulink setup
 hevmodel = 'hev_simulation';
@@ -39,7 +36,7 @@ if run_from_script == 1
 end
 
 %% Plot simulated data
-close all;
+
 simdata = struct('data',{{s},{vref,v},{q},{Ft},{Peng},{Pb},{mf}},...
                  'plottype',{{1},{1},{1},{1},{2},{1},{1}},...
                  'scale',{{1},{3.6},{1},{0.001},{0.001},{0.001},{0.001}},...   
