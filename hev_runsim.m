@@ -1,15 +1,16 @@
-close all;
+%close all;
 clearvars;
 
 % ********************
 % Simulation settings
 % ********************
 
-run_from_script = 0;
+controller = 1;
+run_from_script = 1;
 start_time = '0';
-end_time = '200';
+end_time = '100';
 solver_type = 'Fixed-step';
-Ts = 1;
+Ts = 0.1;
 plotting = 1;
 saveplotting = 0;
 
@@ -24,11 +25,14 @@ cset.set_param('StopTime',end_time);
 cset.set_param('SolverType',solver_type);
 cset.set_param('FixedStep',sprintf('%f',Ts));
 
+% Load HEV models
+%run('hev_models');
+
 % Load speed profile
+run('hev_parameters')
 run('hev_drivecycle');
 
-% Load HEV models
-run('hev_models');
+
 
 % Run simulation
 if run_from_script == 1
@@ -37,13 +41,13 @@ end
 
 %% Plot simulated data
 
-simdata = struct('data',{{s},{vref,v},{q},{Ft},{Peng},{Pb},{mf}},...
-                 'plottype',{{1},{1},{1},{1},{2},{1},{1}},...
-                 'scale',{{1},{3.6},{1},{0.001},{0.001},{0.001},{0.001}},...   
-                 'legend',{{'position'},{'reference speed','simulated speed'},{'SoC'},{'tractive force'},{'engine power'},{'battery power'},{'fuel'}},...
-                 'title',{{'Vehicle Position'},{'Vehicle Speed'},{'Battery SoC'},{'Tractive Force'},{'Engine Power'},{'Battery Power'},{'Fuel'}},...
+simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{v},{Pe},{q},{Pb},{mf}},...
+                 'plottype',{{1},{1},{2},{1},{1},{2},{1},{1},{1}},...
+                 'scale',{{0.001},{0.001},{0.001},{1},{3.6},{0.001},{1},{0.001},{0.001}},...   
+                 'legend',{{'tractive force'},{'mechanical break force'},{'engine reference power'},{'simulated position'},{'simulated speed'},{'engine power'},{'SoC'},{'battery power'},{'fuel'}},...
+                 'title',{{'Tractive Force'},{'Mechanical Break Force'},{'Engine Reference Power'},{'Position'},{'Speed'},{'Engine Power'},{'Battery SoC'},{'Battery Power'},{'Fuel'}},...
                  'xlabel',{'t [s]'},...
-                 'ylabel',{{'s [m]'},{'v [km/h]'},{'SoC []'},{'F_t [kN]'},{'P_{eng} [kW]'},{'P_b [kW]'},{'m_f [kg]'}});
+                 'ylabel',{{'F_t [kN]'},{'F_{mb} [kN]'},{'P_e^* [kN]'},{'s [m]'},{'v [km/h]'},{'P_e [kW]'},{'q []'},{'P_b [kW]'},{'m_f [kg]'}});
 
 if plotting == 1
     for i = 1:length(simdata)

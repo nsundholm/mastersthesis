@@ -1,63 +1,94 @@
 %% Ki-Ha E200 Specifications
 
-% Car data
-m = 39600;
-
 % Efficiencies
 eta_gen = 0.9;
 eta_conv = 0.95;
 eta_Pe = eta_conv*eta_gen;
-
 eta_inv = 0.95;
 eta_im = 0.9;
 eta_gear = 0.98;
 eta_Pout = eta_inv*eta_im*eta_gear;
 
-% Running resistance
+% Car data
+mv = 39600;
+mp = 117*60;
+iv = 1.1;
+m = (mv+mp)*iv;
+maxacc = 2.3/3.6;
+maxdec = -2.0/3.6; 
+Fstart = m*3*9.8/1000; % 3 kgf/ton
 r0 = 554.9;
 r1 = 20.3;
 r2 = 3.56;
-
-% Distance bounds (should be -inf, inf)
-s_max = 100000;
-s_min = -s_max;
-
-%  Speed bounds
-vb = (0:20:100)/3.6;
-dv = 20/3.6;
-
-% Tractive force upper and lower bounds
-Ftb_max = [32000 32000 19000 13000 10000 7000];
-Ftb_min = [-28000 -28000 -28000 -14000 -8000 -5000];
-
-% Slope rates
-Ftk_max = zeros(1,5);
-Ftk_min = zeros(1,5);
-for i = 1:5
-    Ftk_max(i) = (Ftb_max(i+1) - Ftb_max(i))/dv;
-    Ftk_min(i) = (Ftb_min(i+1) - Ftb_min(i))/dv;
-end
+Paux = 30000;
 
 % Engine data
-% wn = 2*pi*1.4;
-% wd = 2*pi*1;
-% xi = sqrt(1-(wd/wn)^2);
-Pe_off = 0;
-Pe_low = 200000;
-Pe_opt = 280000;
-Pe_max = 330000;
+Pes_off = 0;
+Pes_low = 200000;
+Pes_opt = 280000;
+Pes_max = 330000;
+TPe = 0.2;
 
 % Battery data
 Uoc = 692;
 Ri = 0.1;
 Q0 = 22;
-q_max = 0.8;
-q_min = 0.2;
 Pb_max = 300000;
 Pb_min = -300000;
 
+% State bounds
+s_max = 20000;
+s_min = -100;
+v_max = 100/3.6;
+v_min = 0;
+Pe_max = 330000;
+Pe_min = 0;
+q_max = 0.8;
+q_min = 0.2;
+
+% Non-Linear Ft & Fmb upper and lower bounds
+v = 0:100;
+Ft_max = zeros(1,101);
+Ft_min = zeros(1,101);
+
+for i=1:101
+    % Ftmax
+    if v(i) <= 20
+        Ft_max(i) = m*maxacc + Fstart;
+    elseif v(i) <= 70
+        Ft_max(i) = Ft_max(21)*(20/v(i));
+    else
+        Ft_max(i) = Ft_max(21)*(20/v(i))*(70/v(i));
+    end
+    %Ftmin
+    if v(i) <= 42
+        Ft_min(i) = m*maxdec;
+    else
+        Ft_min(i) = m*maxdec*(42/v(i));
+    end
+end
+
+Fmb_max = Ft_min - Ft_min(1);
+Fmb_min = 0;
+
+figure;
+plot(v,Ft_max,v,Ft_min,v,Fmb_max);
+
+% Linear Ft & Fmb upper and lower bounds
+vl = v(1:20:101);
+Ftl_max = Ft_max(1:20:101);
+Ftl_min = Ft_min(1:20:101);
+Fmbl_max = Ftl_min - Ftl_min(1);
+Fmbl_min = 0;
+
+for i = 1:5
+    Ftlk_max(i) = (Ftl_max(i+1) - Ftl_max(i))/(20/3.6);
+    Ftlk_min(i) = (Ftl_min(i+1) - Ftl_min(i))/(20/3.6);
+    Fmblk_max(i) = (Fmbl_max(i+1) - Fmbl_max(i))/(20/3.6);
+end
+
 % State and input upper and lower bounds
-lb_state = [s_min; vb(1); q_min];
-ub_state = [s_max; vb(6); q_max];
-lb_input = [Ftb_min(1); Pe_off];
-ub_input = [Ftb_max(1); Pe_max];
+lb_state = [s_min; v_min; Pe_min; q_min];
+ub_state = [s_max; v_max; Pe_max; q_max];
+lb_input = [Ftl_min(1); Fmbl_min(end); Pes_off];
+ub_input = [Ftl_max(1); Fmbl_max(end); Pes_max];
