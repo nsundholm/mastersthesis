@@ -8,6 +8,7 @@ eqn = diff(y,t) == (-y + Pe_star)/T;
 cond = y(0) == 0;
 ysol(t) = dsolve(eqn,cond);
 
+figure;
 fplot(ysol/1000,[0 10])
 xlabel('Time [s]');
 ylabel('P_{eng} [kW]')

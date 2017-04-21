@@ -7,6 +7,9 @@ persistent uold
 persistent aold
 
 if t == 0
+    % Avoid explosion of internally defined variables in YALMIP
+    yalmip('clear')
+    
     % Load PWA model struct (ugly solution, but done to avoid syms errors)
     load('PWAM.mat')
     % Load HEV parameters
@@ -25,18 +28,15 @@ if t == 0
     nx = 4; % number of states
     nu = 3; % number of inputs
     ny = 1; % number of outputs
-    C = [0 1 0 0];
     
     % Define MPC controller data
-    Qv = 10;
-    QFmb = 2;
-    Qoff = 10;
+    Qv = 1000;
+    Qq = intvar(1);
+    QFmb = 0.001;
+    Qoff = 20;
     Qmin = 2.20;
     Qopt = 2.01;
     Qmax = 2.16;
-    
-    % Avoid explosion of internally defined variables in YALMIP
-    yalmip('clear')
     
     % Define symbolic decision variables
     r = sdpvar(repmat(ny,1,N+1),repmat(1,1,N+1));
@@ -54,13 +54,13 @@ if t == 0
         constraints = [constraints, lb_state <= x{k} <= ub_state,...
                                     lb_input <= u{k} <= ub_input];
                                 
-        % Move-blocking
-        if mb(k) == 1
-            constraints = [constraints, a{k} == a{k-1}];
-        end
+%         % Move-blocking
+%         if mb(k) == 1
+%             constraints = [constraints, a{k} == a{k-1}];
+%         end
                                                                         
         % Pe constraint
-        u{k}(3) = a{k}(2)*Pes_low + a{k}(3)*Pes_opt + a{k}(4)*Pes_max; 
+        u{k}(3) = a{k}(1)*Pes_off + a{k}(2)*Pes_low + a{k}(3)*Pes_opt + a{k}(4)*Pes_max; 
         constraints = [constraints, sum(a{k}) == 1];
         
         % System Dynamics depending on where in ss
@@ -78,10 +78,10 @@ if t == 0
                                     sum(d{k}) == 1];
                                 
         % Objective function                       
-        objective = objective + (C*x{k}-r{k})'*Qv*(C*x{k}-r{k}) +...
+        objective = objective + (x{k}(2)-r{k})'*Qv*(x{k}(2)-r{k}) +...
+                                Qq*-x{k}(4) +...
                                 QFmb*u{k}(2) +...
-                                Qoff*abs(a{k}(1)-pastPes) +...
-                                Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
+                                Qoff*abs(a{k}(1)-pastPes) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
         pastPes = a{k}(1);
     end
     
@@ -90,20 +90,24 @@ if t == 0
     % Define an optimizer that solves the problem for a particular initial
     % state and reference.
     ops = sdpsettings('verbose',0,'solver','gurobi','gurobi.MIPGap',0.0001);
-    parameters_in = {x{1},[r{:}],pastPes};
+    parameters_in = {x{1},[r{:}],pastPes,Qq};
     solutions_out = {u{1},a{1}(1)};
     Controller = optimizer(constraints, objective, ops, parameters_in, solutions_out)
 
-    [solutions,diagnostics] = Controller(currentx,currentr,1);
+    [solutions,diagnostics] = Controller(currentx,currentr,0,0);
     if diagnostics == 1
         error('The problem is infeasible');
     end
     uout = solutions{1};
     aold = solutions{2};
     uold = uout;
-else
+else        
     if mod(t,1) == 0
-        [solutions,diagnostics] = Controller(currentx,currentr,round(aold));
+        if currentx(1) >= 3500
+            [solutions,diagnostics] = Controller(currentx,currentr,round(aold),10000);
+        else
+            [solutions,diagnostics] = Controller(currentx,currentr,round(aold),0);
+        end
         if diagnostics == 1
             error('The problem is infeasible');
         end

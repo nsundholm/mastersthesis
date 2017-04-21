@@ -11,11 +11,15 @@ plotting = 1;
 saveplotting = 0;
 
 start_time = '0';
-end_time = '100';
+end_time = '260';
 solver_type = 'Fixed-step';
 Ts = 0.1;
 
 % ********************
+
+run('hev_parameters')
+run('hev_drivecycle')
+load('PWAM.mat')
 
 % Simulink setup
 hevmodel = 'hev_simulation';
@@ -25,9 +29,6 @@ cset.set_param('StartTime',start_time);
 cset.set_param('StopTime',end_time);
 cset.set_param('SolverType',solver_type);
 cset.set_param('FixedStep',sprintf('%f',Ts));
-run('hev_parameters')
-run('hev_drivecycle')
-load('PWAM.mat')
 
 % Run simulation
 if run_from_script == 1
@@ -36,17 +37,25 @@ end
 
 %% Plot simulated data
 
-simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{vref,v},{Pe},{q},{Pb},{mf}},...
+simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{v},{Pe},{q},{Pb},{mf}},...
                  'plottype',{{1},{1},{2},{1},{1},{1},{1},{1},{1}},...
                  'scale',{{0.001},{0.001},{0.001},{1},{3.6},{0.001},{1},{0.001},{0.001}},...   
-                 'legend',{{'tractive force'},{'mechanical break force'},{'engine reference power'},{'simulated position'},{'simulated speed'},{'engine power'},{'SoC'},{'battery power'},{'fuel'}},...
-                 'title',{{'Tractive Force'},{'Mechanical Break Force'},{'Engine Reference Power'},{'Position'},{'Speed'},{'Engine Power'},{'Battery SoC'},{'Battery Power'},{'Fuel'}},...
+                 'legend',{{'tractive force'},{'mechanical break force'},{'engine reference power'},{'position'},{'simulated speed'},{'engine power'},{'SoC'},{'battery power'},{'fuel mass'}},...
+                 'title',{{'Tractive Force'},{'Mechanical Break Force'},{'Engine Reference Power'},{'Position'},{'Speed'},{'Engine Power'},{'SoC'},{'Battery Power'},{'Fuel Consumption'}},...
+                 'filename',{{'Ft'},{'Fmb'},{'Pices'},{'s'},{'v'},{'Pice'},{'q'},{'Pb'},{'mf'}},...
                  'xlabel',{'t [s]'},...
                  'ylabel',{{'F_t [kN]'},{'F_{mb} [kN]'},{'P_e^* [kN]'},{'s [m]'},{'v [km/h]'},{'P_e [kW]'},{'q []'},{'P_b [kW]'},{'m_f [kg]'}});
 
+% Plot simulated data    
 if plotting == 1
+    % Create directory if plots should be saved
+    if saveplotting == 1
+        date = datestr(now,'mm-dd HH:MM:SS');
+        mkdir('Figures',date);
+    end
+    
     for i = 1:length(simdata)
-        filename = [char(simdata(i).title),' ',datestr(now, 'dd-mm-yy')];
+        filename = char(simdata(i).filename);
         figure('name',filename,'numbertitle','off');
         for j = 1:length(simdata(i).data)
             if cell2mat(simdata(i).plottype) == 1
@@ -63,7 +72,7 @@ if plotting == 1
         grid on;
         
         if saveplotting == 1
-            print(simdata(i).title,'-depsc')
+            saveas(gcf,fullfile(sprintf('Figures/%s',date),sprintf('%s.eps',filename)),'epsc2');
         end
     end
 end

@@ -49,7 +49,7 @@
 
 %% Generated speed profile
 
-notch_ref = [repmat(1,1,40) repmat(0,1,20) repmat(-1,1,20) repmat(0,1,100)];
+notch_ref = [repmat(1,1,70) repmat(0,1,30) repmat(1,1,10) repmat(0,1,30) repmat(1,1,10) repmat(0,1,30) repmat(1,1,10) repmat(0,1,30) repmat(-1,1,40) repmat(0,1,100)];
 v_ref = zeros(1,length(notch_ref));
 
 for k=1:length(notch_ref)
