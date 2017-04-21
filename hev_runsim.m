@@ -5,14 +5,15 @@ clearvars;
 % Simulation settings
 % ********************
 
-controller = 1;
-run_from_script = 1;
+controller = 2;
+run_from_script = 0;
+plotting = 1;
+saveplotting = 0;
+
 start_time = '0';
 end_time = '100';
 solver_type = 'Fixed-step';
 Ts = 0.1;
-plotting = 1;
-saveplotting = 0;
 
 % ********************
 
@@ -24,15 +25,9 @@ cset.set_param('StartTime',start_time);
 cset.set_param('StopTime',end_time);
 cset.set_param('SolverType',solver_type);
 cset.set_param('FixedStep',sprintf('%f',Ts));
-
-% Load HEV models
-%run('hev_models');
-
-% Load speed profile
 run('hev_parameters')
-run('hev_drivecycle');
-
-
+run('hev_drivecycle')
+load('PWAM.mat')
 
 % Run simulation
 if run_from_script == 1
@@ -41,8 +36,8 @@ end
 
 %% Plot simulated data
 
-simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{v},{Pe},{q},{Pb},{mf}},...
-                 'plottype',{{1},{1},{2},{1},{1},{2},{1},{1},{1}},...
+simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{vref,v},{Pe},{q},{Pb},{mf}},...
+                 'plottype',{{1},{1},{2},{1},{1},{1},{1},{1},{1}},...
                  'scale',{{0.001},{0.001},{0.001},{1},{3.6},{0.001},{1},{0.001},{0.001}},...   
                  'legend',{{'tractive force'},{'mechanical break force'},{'engine reference power'},{'simulated position'},{'simulated speed'},{'engine power'},{'SoC'},{'battery power'},{'fuel'}},...
                  'title',{{'Tractive Force'},{'Mechanical Break Force'},{'Engine Reference Power'},{'Position'},{'Speed'},{'Engine Power'},{'Battery SoC'},{'Battery Power'},{'Fuel'}},...

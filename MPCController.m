@@ -1,8 +1,10 @@
-function uout = MPCController(currentr,currentx,oldPe,t)
+function uout = MPCController(currentr,currentx,t)
 %#ok<*AGROW>
 %#ok<*REPMAT>
 
 persistent Controller
+persistent uold
+persistent aold
 
 if t == 0
     % Load PWA model struct (ugly solution, but done to avoid syms errors)
@@ -11,7 +13,7 @@ if t == 0
     run('hev_parameters.m')
     
     N = 20;
-    Mb = 10;
+    Mb = 20;
     mb = ones(1,N);
     for i=1:length(mb)
         if (mod(i-1,Mb) == 0)
@@ -20,16 +22,18 @@ if t == 0
     end
     
     % Define model data
-    nx = 3; % number of states
-    nu = 2; % number of inputs
+    nx = 4; % number of states
+    nu = 3; % number of inputs
     ny = 1; % number of outputs
+    C = [0 1 0 0];
     
     % Define MPC controller data
-    Qv = 400;
-    Qoff = 10000;
-    Qmin = 220;
-    Qopt = 201;
-    Qmax = 216;
+    Qv = 10;
+    QFmb = 2;
+    Qoff = 10;
+    Qmin = 2.20;
+    Qopt = 2.01;
+    Qmax = 2.16;
     
     % Avoid explosion of internally defined variables in YALMIP
     yalmip('clear')
@@ -39,17 +43,16 @@ if t == 0
     x = sdpvar(repmat(nx,1,N+1),repmat(1,1,N+1));
     u = sdpvar(repmat(nu,1,N),repmat(1,1,N));
     
-    a = binvar(repmat(4,1,N),repmat(1,1,N)); % Decide Pe
+    a = binvar(repmat(4,1,N),repmat(1,1,N)); % Decide Pes
     d = binvar(repmat(5,1,N),repmat(1,1,N)); % Decide M
-    pastPe = binvar(1);
+    pastPes = binvar(1);
     
     constraints = [];
     objective = 0;
     for k = 1:N
         % State and input upper and lower bounds
         constraints = [constraints, lb_state <= x{k} <= ub_state,...
-                                    lb_input <= u{k} <= ub_input,...
-                                    sum(a{k}) == 1];
+                                    lb_input <= u{k} <= ub_input];
                                 
         % Move-blocking
         if mb(k) == 1
@@ -57,14 +60,15 @@ if t == 0
         end
                                                                         
         % Pe constraint
-        u{k}(2) = a{k}(2)*Pe_low + a{k}(3)*Pe_opt + a{k}(4)*Pe_max; 
+        u{k}(3) = a{k}(2)*Pes_low + a{k}(3)*Pes_opt + a{k}(4)*Pes_max; 
+        constraints = [constraints, sum(a{k}) == 1];
         
         % System Dynamics depending on where in ss
-        M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vb(1) <= x{k}(2) <= vb(2), Ftb_min(1) + Ftk_min(1)*(x{k}(2) - vb(1)) <= u{k}(1) <= Ftb_max(1) + Ftk_max(1)*(x{k}(2) - vb(1)), Pb_min <= eta_Pout*vb(2)*u{k}(1) - eta_Pe*u{k}(2)];
-        M2 = [x{k+1} == M(2).x0 + M(2).Ad*(x{k} - M(2).x0) + M(2).Bd*(u{k} - M(2).u0), vb(2) <= x{k}(2) <= vb(3), Ftb_min(2) + Ftk_min(2)*(x{k}(2) - vb(2)) <= u{k}(1) <= Ftb_max(2) + Ftk_max(2)*(x{k}(2) - vb(2)), Pb_min <= eta_Pout*vb(3)*u{k}(1) - eta_Pe*u{k}(2)];
-        M3 = [x{k+1} == M(3).x0 + M(3).Ad*(x{k} - M(3).x0) + M(3).Bd*(u{k} - M(3).u0), vb(3) <= x{k}(2) <= vb(4), Ftb_min(3) + Ftk_min(3)*(x{k}(2) - vb(3)) <= u{k}(1) <= Ftb_max(3) + Ftk_max(3)*(x{k}(2) - vb(3)), Pb_min <= eta_Pout*vb(4)*u{k}(1) - eta_Pe*u{k}(2)];
-        M4 = [x{k+1} == M(4).x0 + M(4).Ad*(x{k} - M(4).x0) + M(4).Bd*(u{k} - M(4).u0), vb(4) <= x{k}(2) <= vb(5), Ftb_min(4) + Ftk_min(4)*(x{k}(2) - vb(4)) <= u{k}(1) <= Ftb_max(4) + Ftk_max(4)*(x{k}(2) - vb(4)), Pb_min <= eta_Pout*vb(5)*u{k}(1) - eta_Pe*u{k}(2)];
-        M5 = [x{k+1} == M(5).x0 + M(5).Ad*(x{k} - M(5).x0) + M(5).Bd*(u{k} - M(5).u0), vb(5) <= x{k}(2) <= vb(6), Ftb_min(5) + Ftk_min(5)*(x{k}(2) - vb(5)) <= u{k}(1) <= Ftb_max(5) + Ftk_max(5)*(x{k}(2) - vb(5)), Pb_min <= eta_Pout*vb(6)*u{k}(1) - eta_Pe*u{k}(2)];
+        M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vl(1) <= x{k}(2) <= vl(2), Ftl_min(1) + Ftlk_min(1)*(x{k}(2) - vl(1)) <= u{k}(1) <= Ftl_max(1) + Ftlk_max(1)*(x{k}(2) - vl(1)), u{k}(2) == 0,                                            Pb_min <= eta_Pout*vl(2)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
+        M2 = [x{k+1} == M(2).x0 + M(2).Ad*(x{k} - M(2).x0) + M(2).Bd*(u{k} - M(2).u0), vl(2) <= x{k}(2) <= vl(3), Ftl_min(2) + Ftlk_min(2)*(x{k}(2) - vl(2)) <= u{k}(1) <= Ftl_max(2) + Ftlk_max(2)*(x{k}(2) - vl(2)), u{k}(2) == 0,                                            Pb_min <= eta_Pout*vl(3)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
+        M3 = [x{k+1} == M(3).x0 + M(3).Ad*(x{k} - M(3).x0) + M(3).Bd*(u{k} - M(3).u0), vl(3) <= x{k}(2) <= vl(4), Ftl_min(3) + Ftlk_min(3)*(x{k}(2) - vl(3)) <= u{k}(1) <= Ftl_max(3) + Ftlk_max(3)*(x{k}(2) - vl(3)), u{k}(2) <= Fmbl_max(3) + Fmblk_max(3)*(x{k}(2) - vl(3)), Pb_min <= eta_Pout*vl(4)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
+        M4 = [x{k+1} == M(4).x0 + M(4).Ad*(x{k} - M(4).x0) + M(4).Bd*(u{k} - M(4).u0), vl(4) <= x{k}(2) <= vl(5), Ftl_min(4) + Ftlk_min(4)*(x{k}(2) - vl(4)) <= u{k}(1) <= Ftl_max(4) + Ftlk_max(4)*(x{k}(2) - vl(4)), u{k}(2) <= Fmbl_max(4) + Fmblk_max(4)*(x{k}(2) - vl(4)), Pb_min <= eta_Pout*vl(5)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
+        M5 = [x{k+1} == M(5).x0 + M(5).Ad*(x{k} - M(5).x0) + M(5).Bd*(u{k} - M(5).u0), vl(5) <= x{k}(2) <= vl(6), Ftl_min(5) + Ftlk_min(5)*(x{k}(2) - vl(5)) <= u{k}(1) <= Ftl_max(5) + Ftlk_max(5)*(x{k}(2) - vl(5)), u{k}(2) <= Fmbl_max(5) + Fmblk_max(5)*(x{k}(2) - vl(5)), Pb_min <= eta_Pout*vl(6)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
         
         constraints = [constraints, implies(d{k}(1), M1),...
                                     implies(d{k}(2), M2),...
@@ -74,28 +78,39 @@ if t == 0
                                     sum(d{k}) == 1];
                                 
         % Objective function                       
-        objective = objective + (x{k}(2)-r{k})'*Qv*(x{k}(2)-r{k}) + Qoff*abs(a{k}(1)-pastPe) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
-        pastPe = a{k}(1);
+        objective = objective + (C*x{k}-r{k})'*Qv*(C*x{k}-r{k}) +...
+                                QFmb*u{k}(2) +...
+                                Qoff*abs(a{k}(1)-pastPes) +...
+                                Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
+        pastPes = a{k}(1);
     end
     
     constraints = [constraints, lb_state <= x{N+1} <= ub_state];
     
     % Define an optimizer that solves the problem for a particular initial
     % state and reference.
-    ops = sdpsettings('verbose',0,'solver','gurobi');
-    parameters_in = {x{1},[r{:}],pastPe};
+    ops = sdpsettings('verbose',0,'solver','gurobi','gurobi.MIPGap',0.0001);
+    parameters_in = {x{1},[r{:}],pastPes};
     solutions_out = {u{1},a{1}(1)};
     Controller = optimizer(constraints, objective, ops, parameters_in, solutions_out)
 
-    [solutions,diagnostics] = Controller(currentx,currentr,oldPe);
+    [solutions,diagnostics] = Controller(currentx,currentr,1);
     if diagnostics == 1
         error('The problem is infeasible');
     end
-    uout = [solutions{1}; solutions{2}];
+    uout = solutions{1};
+    aold = solutions{2};
+    uold = uout;
 else
-    [solutions,diagnostics] = Controller(currentx,currentr,oldPe);
-    if diagnostics == 1
-        error('The problem is infeasible');
+    if mod(t,1) == 0
+        [solutions,diagnostics] = Controller(currentx,currentr,round(aold));
+        if diagnostics == 1
+            error('The problem is infeasible');
+        end
+        uout = solutions{1};
+        aold = solutions{2};
+        uold = uout;
+    else
+        uout = uold;
     end
-    uout = [solutions{1}; solutions{2}];
 end

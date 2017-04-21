@@ -1,5 +1,5 @@
 %% Ki-Ha E200 Specifications
-
+N = 20;
 % Efficiencies
 eta_gen = 0.9;
 eta_conv = 0.95;
@@ -47,35 +47,35 @@ q_max = 0.8;
 q_min = 0.2;
 
 % Non-Linear Ft & Fmb upper and lower bounds
-v = 0:100;
+vtmb = 0:100;
 Ft_max = zeros(1,101);
 Ft_min = zeros(1,101);
 
 for i=1:101
     % Ftmax
-    if v(i) <= 20
+    if vtmb(i) <= 20
         Ft_max(i) = m*maxacc + Fstart;
-    elseif v(i) <= 70
-        Ft_max(i) = Ft_max(21)*(20/v(i));
+    elseif vtmb(i) <= 70
+        Ft_max(i) = Ft_max(21)*(20/vtmb(i));
     else
-        Ft_max(i) = Ft_max(21)*(20/v(i))*(70/v(i));
+        Ft_max(i) = Ft_max(21)*(20/vtmb(i))*(70/vtmb(i));
     end
     %Ftmin
-    if v(i) <= 42
+    if vtmb(i) <= 42
         Ft_min(i) = m*maxdec;
     else
-        Ft_min(i) = m*maxdec*(42/v(i));
+        Ft_min(i) = m*maxdec*(42/vtmb(i));
     end
 end
 
 Fmb_max = Ft_min - Ft_min(1);
 Fmb_min = 0;
 
-figure;
-plot(v,Ft_max,v,Ft_min,v,Fmb_max);
+% figure;
+% plot(vtmb,Ft_max,vtmb,Ft_min,vtmb,Fmb_max);
 
 % Linear Ft & Fmb upper and lower bounds
-vl = v(1:20:101);
+vl = vtmb(1:20:101)/3.6;
 Ftl_max = Ft_max(1:20:101);
 Ftl_min = Ft_min(1:20:101);
 Fmbl_max = Ftl_min - Ftl_min(1);
@@ -90,5 +90,5 @@ end
 % State and input upper and lower bounds
 lb_state = [s_min; v_min; Pe_min; q_min];
 ub_state = [s_max; v_max; Pe_max; q_max];
-lb_input = [Ftl_min(1); Fmbl_min(end); Pes_off];
+lb_input = [Ftl_min(1); Fmbl_min; Pes_off];
 ub_input = [Ftl_max(1); Fmbl_max(end); Pes_max];
