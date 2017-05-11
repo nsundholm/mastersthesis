@@ -74,7 +74,8 @@ for k=1:length(notch_ref)
     end
 end
 
-plot(0:1:(length(v_ref)-1),3.6*v_ref)
+plot(0:1:(length(v_ref)-1),3.6*v_ref,'Linewidth',1.5)
+xlim([0 260]);
 xlabel('Time [s]')
 ylabel('v [km/h]')
 

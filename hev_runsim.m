@@ -37,21 +37,21 @@ end
 
 %% Plot simulated data
 
-simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{v},{Pe},{q},{Pb},{mf}},...
-                 'plottype',{{1},{1},{2},{1},{1},{1},{1},{1},{1}},...
+simdata = struct('data',{{Ft},{Fmb},{Pes},{s},{vref,v},{Pe},{q},{Pb},{mf}},...
+                 'plottype',{{2},{2},{2},{1},{1},{1},{1},{1},{1}},...
                  'scale',{{0.001},{0.001},{0.001},{1},{3.6},{0.001},{1},{0.001},{0.001}},...   
                  'legend',{{'tractive force'},{'mechanical break force'},{'engine reference power'},{'position'},{'simulated speed'},{'engine power'},{'SoC'},{'battery power'},{'fuel mass'}},...
                  'title',{{'Tractive Force'},{'Mechanical Break Force'},{'Engine Reference Power'},{'Position'},{'Speed'},{'Engine Power'},{'SoC'},{'Battery Power'},{'Fuel Consumption'}},...
                  'filename',{{'Ft'},{'Fmb'},{'Pices'},{'s'},{'v'},{'Pice'},{'q'},{'Pb'},{'mf'}},...
                  'xlabel',{'t [s]'},...
-                 'ylabel',{{'F_t [kN]'},{'F_{mb} [kN]'},{'P_e^* [kN]'},{'s [m]'},{'v [km/h]'},{'P_e [kW]'},{'q []'},{'P_b [kW]'},{'m_f [kg]'}});
+                 'ylabel',{{'F_t [kN]'},{'F_{mb} [kN]'},{'P_{ice}^* [kN]'},{'s [m]'},{'v [km/h]'},{'P_{ice} [kW]'},{'q [-]'},{'P_b [kW]'},{'m_f [kg]'}});
 
 % Plot simulated data    
 if plotting == 1
     % Create directory if plots should be saved
     if saveplotting == 1
         date = datestr(now,'mm-dd HH:MM:SS');
-        mkdir('Figures',date);
+        mkdir('Figures',date);x
     end
     
     for i = 1:length(simdata)
@@ -69,10 +69,11 @@ if plotting == 1
         legend(simdata(i).legend);
         xlabel(simdata(i).xlabel);
         ylabel(simdata(i).ylabel);
+        xlim([0 260]);
         grid on;
         
         if saveplotting == 1
-            saveas(gcf,fullfile(sprintf('Figures/%s',date),sprintf('%s.eps',filename)),'epsc2');
+            saveas(gcf,fullfile(sprintf('Figures/%s',date),sprintf('%s.jpg',filename)));%,'epsc2');
         end
     end
 end

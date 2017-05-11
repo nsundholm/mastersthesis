@@ -15,7 +15,7 @@ syms Uoc Ri Q0 Paux TPe
 % xdot = f(x,u)
 vdot = Ft/m - Fmb/m - (r2*v^2 + r1*v + r0)/m;
 Pedot = (Pes - Pe)/TPe; 
-qdot = -(Uoc - sqrt(Uoc^2 - 4*(eta_inv*eta_im*eta_gear*Ft*v - eta_gen*eta_conv*Pe + Paux)*Ri))/(2*3600*Q0*Ri);
+qdot = -(Uoc - sqrt(Uoc^2 - 4*(Ft*v/(1) - eta_gen*eta_conv*Pe + Paux)*Ri))/(2*3600*Q0*Ri);
 xdot = [vdot; Pedot; qdot];
 
 % Jacobians

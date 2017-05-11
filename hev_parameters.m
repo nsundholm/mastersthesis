@@ -1,5 +1,5 @@
 %% Ki-Ha E200 Specifications
-N = 20;
+N = 40;
 % Efficiencies
 eta_gen = 0.9;
 eta_conv = 0.95;

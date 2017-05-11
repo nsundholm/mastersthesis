@@ -15,8 +15,7 @@ if t == 0
     % Load HEV parameters
     run('hev_parameters.m')
     
-    N = 20;
-    Mb = 20;
+    Mb = 5;
     mb = ones(1,N);
     for i=1:length(mb)
         if (mod(i-1,Mb) == 0)
@@ -32,8 +31,10 @@ if t == 0
     % Define MPC controller data
     Qv = 1000;
     Qq = intvar(1);
-    QFmb = 0.001;
-    Qoff = 20;
+    QFt = 0.1;
+    QFmb = 0;
+    Qoff = 5;
+    Qpe = 150;
     Qmin = 2.20;
     Qopt = 2.01;
     Qmax = 2.16;
@@ -54,21 +55,21 @@ if t == 0
         constraints = [constraints, lb_state <= x{k} <= ub_state,...
                                     lb_input <= u{k} <= ub_input];
                                 
-%         % Move-blocking
-%         if mb(k) == 1
-%             constraints = [constraints, a{k} == a{k-1}];
-%         end
+        % Move-blocking
+        if mb(k) == 1
+            constraints = [constraints, a{k} == a{k-1}];
+        end
                                                                         
         % Pe constraint
         u{k}(3) = a{k}(1)*Pes_off + a{k}(2)*Pes_low + a{k}(3)*Pes_opt + a{k}(4)*Pes_max; 
         constraints = [constraints, sum(a{k}) == 1];
         
         % System Dynamics depending on where in ss
-        M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vl(1) <= x{k}(2) <= vl(2), Ftl_min(1) + Ftlk_min(1)*(x{k}(2) - vl(1)) <= u{k}(1) <= Ftl_max(1) + Ftlk_max(1)*(x{k}(2) - vl(1)), u{k}(2) == 0,                                            Pb_min <= eta_Pout*vl(2)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
-        M2 = [x{k+1} == M(2).x0 + M(2).Ad*(x{k} - M(2).x0) + M(2).Bd*(u{k} - M(2).u0), vl(2) <= x{k}(2) <= vl(3), Ftl_min(2) + Ftlk_min(2)*(x{k}(2) - vl(2)) <= u{k}(1) <= Ftl_max(2) + Ftlk_max(2)*(x{k}(2) - vl(2)), u{k}(2) == 0,                                            Pb_min <= eta_Pout*vl(3)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
-        M3 = [x{k+1} == M(3).x0 + M(3).Ad*(x{k} - M(3).x0) + M(3).Bd*(u{k} - M(3).u0), vl(3) <= x{k}(2) <= vl(4), Ftl_min(3) + Ftlk_min(3)*(x{k}(2) - vl(3)) <= u{k}(1) <= Ftl_max(3) + Ftlk_max(3)*(x{k}(2) - vl(3)), u{k}(2) <= Fmbl_max(3) + Fmblk_max(3)*(x{k}(2) - vl(3)), Pb_min <= eta_Pout*vl(4)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
-        M4 = [x{k+1} == M(4).x0 + M(4).Ad*(x{k} - M(4).x0) + M(4).Bd*(u{k} - M(4).u0), vl(4) <= x{k}(2) <= vl(5), Ftl_min(4) + Ftlk_min(4)*(x{k}(2) - vl(4)) <= u{k}(1) <= Ftl_max(4) + Ftlk_max(4)*(x{k}(2) - vl(4)), u{k}(2) <= Fmbl_max(4) + Fmblk_max(4)*(x{k}(2) - vl(4)), Pb_min <= eta_Pout*vl(5)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
-        M5 = [x{k+1} == M(5).x0 + M(5).Ad*(x{k} - M(5).x0) + M(5).Bd*(u{k} - M(5).u0), vl(5) <= x{k}(2) <= vl(6), Ftl_min(5) + Ftlk_min(5)*(x{k}(2) - vl(5)) <= u{k}(1) <= Ftl_max(5) + Ftlk_max(5)*(x{k}(2) - vl(5)), u{k}(2) <= Fmbl_max(5) + Fmblk_max(5)*(x{k}(2) - vl(5)), Pb_min <= eta_Pout*vl(6)*u{k}(1) - eta_Pe*u{k}(3) <= Pb_max];
+        M1 = [x{k+1} == M(1).x0 + M(1).Ad*(x{k} - M(1).x0) + M(1).Bd*(u{k} - M(1).u0), vl(1) <= x{k}(2) <= vl(2), Ftl_min(1) + Ftlk_min(1)*(x{k}(2) - vl(1)) <= u{k}(1) <= Ftl_max(1) + Ftlk_max(1)*(x{k}(2) - vl(1)), u{k}(2) == 0,                                            Pb_min <= vl(2)*u{k}(1)/1 - eta_Pe*u{k}(3) + Paux <= Pb_max];
+        M2 = [x{k+1} == M(2).x0 + M(2).Ad*(x{k} - M(2).x0) + M(2).Bd*(u{k} - M(2).u0), vl(2) <= x{k}(2) <= vl(3), Ftl_min(2) + Ftlk_min(2)*(x{k}(2) - vl(2)) <= u{k}(1) <= Ftl_max(2) + Ftlk_max(2)*(x{k}(2) - vl(2)), u{k}(2) == 0,                                            Pb_min <= vl(3)*u{k}(1)/1 - eta_Pe*u{k}(3) + Paux <= Pb_max];
+        M3 = [x{k+1} == M(3).x0 + M(3).Ad*(x{k} - M(3).x0) + M(3).Bd*(u{k} - M(3).u0), vl(3) <= x{k}(2) <= vl(4), Ftl_min(3) + Ftlk_min(3)*(x{k}(2) - vl(3)) <= u{k}(1) <= Ftl_max(3) + Ftlk_max(3)*(x{k}(2) - vl(3)), u{k}(2) <= Fmbl_max(3) + Fmblk_max(3)*(x{k}(2) - vl(3)), Pb_min <= vl(4)*u{k}(1)/1 - eta_Pe*u{k}(3) + Paux <= Pb_max];
+        M4 = [x{k+1} == M(4).x0 + M(4).Ad*(x{k} - M(4).x0) + M(4).Bd*(u{k} - M(4).u0), vl(4) <= x{k}(2) <= vl(5), Ftl_min(4) + Ftlk_min(4)*(x{k}(2) - vl(4)) <= u{k}(1) <= Ftl_max(4) + Ftlk_max(4)*(x{k}(2) - vl(4)), u{k}(2) <= Fmbl_max(4) + Fmblk_max(4)*(x{k}(2) - vl(4)), Pb_min <= vl(5)*u{k}(1)/1 - eta_Pe*u{k}(3) + Paux <= Pb_max];
+        M5 = [x{k+1} == M(5).x0 + M(5).Ad*(x{k} - M(5).x0) + M(5).Bd*(u{k} - M(5).u0), vl(5) <= x{k}(2) <= vl(6), Ftl_min(5) + Ftlk_min(5)*(x{k}(2) - vl(5)) <= u{k}(1) <= Ftl_max(5) + Ftlk_max(5)*(x{k}(2) - vl(5)), u{k}(2) <= Fmbl_max(5) + Fmblk_max(5)*(x{k}(2) - vl(5)), Pb_min <= vl(6)*u{k}(1)/1 - eta_Pe*u{k}(3) + Paux <= Pb_max];
         
         constraints = [constraints, implies(d{k}(1), M1),...
                                     implies(d{k}(2), M2),...
@@ -79,22 +80,24 @@ if t == 0
                                 
         % Objective function                       
         objective = objective + (x{k}(2)-r{k})'*Qv*(x{k}(2)-r{k}) +...
-                                Qq*-x{k}(4) +...
+                                (x{k}(4)-0.55)'*Qq*(x{k}(4)-0.55) +...
+                                QFt*u{k}(1) +...
                                 QFmb*u{k}(2) +...
-                                Qoff*abs(a{k}(1)-pastPes) + Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4);
-        pastPes = a{k}(1);
+                                Qpe*(Qmin*a{k}(2) + Qopt*a{k}(3) + Qmax*a{k}(4));
+        pastPes = a{k};
     end
     
+    objective = objective + (a{1}-pastPes)'*Qoff*(a{1}-pastPes);
     constraints = [constraints, lb_state <= x{N+1} <= ub_state];
     
     % Define an optimizer that solves the problem for a particular initial
     % state and reference.
-    ops = sdpsettings('verbose',0,'solver','gurobi','gurobi.MIPGap',0.0001);
+    ops = sdpsettings('verbose',0,'solver','gurobi','gurobi.MIPGap',0.001);
     parameters_in = {x{1},[r{:}],pastPes,Qq};
-    solutions_out = {u{1},a{1}(1)};
+    solutions_out = {u{1},a{1}};
     Controller = optimizer(constraints, objective, ops, parameters_in, solutions_out)
 
-    [solutions,diagnostics] = Controller(currentx,currentr,0,0);
+    [solutions,diagnostics] = Controller(currentx,currentr,[1;0;0;0],0);
     if diagnostics == 1
         error('The problem is infeasible');
     end
@@ -104,7 +107,7 @@ if t == 0
 else        
     if mod(t,1) == 0
         if currentx(1) >= 3500
-            [solutions,diagnostics] = Controller(currentx,currentr,round(aold),10000);
+            [solutions,diagnostics] = Controller(currentx,currentr,round(aold),1000);
         else
             [solutions,diagnostics] = Controller(currentx,currentr,round(aold),0);
         end

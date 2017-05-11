@@ -145,9 +145,9 @@ legend('F_{t,max}','F_{t,min}','F_{mb}');
 xlabel('v [km/h]');
 ylabel('[kN]');
 
-%%
+
 figure;
-plot(v,(v/3.6).*Ftv_max,v,(v/3.6).*Ftv_min);
+plot(v,(v/3.6).*Ftmax,v,(v/3.6).*Ftmin);
 grid on;
 title('Maximum output power at wheels');
 legend('P_{out,max}','P_{out,min}');
