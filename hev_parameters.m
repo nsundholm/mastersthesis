@@ -27,11 +27,11 @@ Pes_off = 0;
 Pes_low = 200000;
 Pes_opt = 280000;
 Pes_max = 330000;
-TPe = 0.2;
+TPe = 1;
 
 % Battery data
 Uoc = 692;
-Ri = 0.1;
+Ri = 0.0336;
 Q0 = 22;
 Pb_max = 300000;
 Pb_min = -300000;
